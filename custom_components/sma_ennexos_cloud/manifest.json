@@ -1,0 +1,12 @@
+{
+  "domain": "sma_ennexos_cloud",
+  "name": "SMA ennexOS Cloud",
+  "version": "1.0.0",
+  "integration_type": "service",
+  "documentation": "https://github.com/MauroDruwel/SMA-ennexOS-cloud-HA",
+  "issue_tracker": "https://github.com/MauroDruwel/SMA-ennexOS-cloud-HA/issues",
+  "requirements": [],
+  "codeowners": ["@MauroDruwel"],
+  "config_flow": true,
+  "iot_class": "cloud_polling"
+}

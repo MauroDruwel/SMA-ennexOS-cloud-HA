@@ -1,0 +1,21 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Verbinding maken met SMA ennexOS",
+        "description": "Voer je SMA ID / Sunny Portal inloggegevens in.",
+        "data": {
+          "username": "Gebruikersnaam",
+          "password": "Wachtwoord"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Geen verbinding mogelijk. Probeer het opnieuw.",
+      "invalid_auth": "Ongeldige gebruikersnaam of wachtwoord."
+    },
+    "abort": {
+      "already_configured": "Dit account is al geconfigureerd."
+    }
+  }
+}

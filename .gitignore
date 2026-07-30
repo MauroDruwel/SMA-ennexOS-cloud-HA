@@ -203,6 +203,9 @@ cython_debug/
 # Temporary file for partial code execution
 tempCodeRunnerFile.py
 
+# HAR files (may contain credentials/tokens)
+*.har
+
 # Ruff stuff:
 .ruff_cache/
 
