@@ -53,7 +53,7 @@ class SmaEnnexosBaseSensor(CoordinatorEntity, SensorEntity):
 
     def __init__(
         self,
-        coordinator: SmaEnnexosDataUpdateCoordinator,
+        coordinator: SmaEnnexosCloudDataUpdateCoordinator,
         entry: SmaEnnexosConfigEntry,
     ) -> None:
         super().__init__(coordinator)
@@ -87,7 +87,6 @@ class SmaEnnexosDailyEnergySensor(SmaEnnexosBaseSensor):
     _attr_name = "Daily energy"
     _attr_native_unit_of_measurement = UnitOfEnergy.WATT_HOUR
     _attr_device_class = SensorDeviceClass.ENERGY
-    _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_icon = "mdi:lightning-bolt"
 
     def __init__(self, coordinator, entry) -> None:
