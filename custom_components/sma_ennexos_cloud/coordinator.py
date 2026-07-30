@@ -37,7 +37,7 @@ class SmaEnnexosCloudDataUpdateCoordinator(DataUpdateCoordinator):
             raise UpdateFailed(f"Error fetching SMA ennexOS data: {err}") from err
 
     def _fetch_data(self) -> dict:
-        from sma_ennexos import SmaClient
+        from sma_ennexos_cloud import SmaClient
 
         if not hasattr(self.client, "access_token"):
             self.client = SmaClient(

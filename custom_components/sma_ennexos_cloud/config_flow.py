@@ -29,7 +29,7 @@ class SmaEnnexosCloudConfigFlow(ConfigFlow, domain=DOMAIN):
             self._abort_if_unique_id_configured()
 
             try:
-                from sma_ennexos import SmaClient
+                from sma_ennexos_cloud import SmaClient
 
                 def _test_login():
                     client = SmaClient(username=username, password=password)

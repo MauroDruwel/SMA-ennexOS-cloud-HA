@@ -5,7 +5,7 @@
   "integration_type": "service",
   "documentation": "https://github.com/MauroDruwel/SMA-ennexOS-cloud-HA",
   "issue_tracker": "https://github.com/MauroDruwel/SMA-ennexOS-cloud-HA/issues",
-  "requirements": ["sma_ennexos>=0.1.0"],
+  "requirements": ["sma_ennexos_cloud>=0.1.0"],
   "codeowners": ["@MauroDruwel"],
   "config_flow": true,
   "iot_class": "cloud_polling"
