@@ -13,10 +13,10 @@ type SmaEnnexosConfigEntry = ConfigEntry[SmaEnnexosCloudDataUpdateCoordinator]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: SmaEnnexosConfigEntry) -> bool:
-    from .api import SmaSession
+    from sma_ennexos import SmaClient
 
     def _create_client():
-        client = SmaSession(
+        client = SmaClient(
             username=entry.data[CONF_USERNAME],
             password=entry.data[CONF_PASSWORD],
         )

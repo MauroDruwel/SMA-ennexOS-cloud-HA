@@ -29,10 +29,10 @@ class SmaEnnexosCloudConfigFlow(ConfigFlow, domain=DOMAIN):
             self._abort_if_unique_id_configured()
 
             try:
-                from .api import SmaSession
+                from sma_ennexos import SmaClient
 
                 def _test_login():
-                    client = SmaSession(username=username, password=password)
+                    client = SmaClient(username=username, password=password)
                     try:
                         client.login()
                         return True

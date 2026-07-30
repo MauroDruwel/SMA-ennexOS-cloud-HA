@@ -37,10 +37,10 @@ class SmaEnnexosCloudDataUpdateCoordinator(DataUpdateCoordinator):
             raise UpdateFailed(f"Error fetching SMA ennexOS data: {err}") from err
 
     def _fetch_data(self) -> dict:
-        from .api import SmaSession
+        from sma_ennexos import SmaClient
 
         if not hasattr(self.client, "access_token"):
-            self.client = SmaSession(
+            self.client = SmaClient(
                 username=self.entry.data[CONF_USERNAME],
                 password=self.entry.data[CONF_PASSWORD],
             )
@@ -52,8 +52,11 @@ class SmaEnnexosCloudDataUpdateCoordinator(DataUpdateCoordinator):
 
         try:
             power = self.client.get_current_power()
+            power_val = power.value
+            power_ts = power.timestamp
         except Exception:
-            power = {"value": None, "timestamp": ""}
+            power_val = None
+            power_ts = ""
 
         if self._plant_name is None:
             try:
@@ -64,14 +67,14 @@ class SmaEnnexosCloudDataUpdateCoordinator(DataUpdateCoordinator):
         if now - self._last_energy_poll >= ENERGY_POLL_INTERVAL:
             try:
                 energy = self.client.get_daily_energy()
-                self._last_daily_wh = energy["wh"]
+                self._last_daily_wh = energy.wh
                 self._last_energy_poll = now
             except Exception:
                 pass
 
         return {
-            "power": power.get("value"),
-            "power_timestamp": power.get("timestamp", ""),
+            "power": power_val,
+            "power_timestamp": power_ts,
             "daily_wh": self._last_daily_wh,
             "plant_name": self._plant_name,
         }
