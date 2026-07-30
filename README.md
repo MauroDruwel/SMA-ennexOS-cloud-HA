@@ -1,3 +1,7 @@
+<p align="center">
+  <img alt="SMA" src="https://raw.githubusercontent.com/MauroDruwel/SMA-ennexOS-cloud-HA/main/custom_components/sma_ennexos_cloud/brand/icon.png" width="200"/>
+</p>
+
 <h1 align="center">SMA ennexOS Cloud for Home Assistant</h1>
 <p align="center"><b>Your PV production data, directly in Home Assistant.</b></p>
 
