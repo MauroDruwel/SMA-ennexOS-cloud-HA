@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 
 from homeassistant.components.sensor import (
@@ -87,6 +88,7 @@ class SmaEnnexosDailyEnergySensor(SmaEnnexosBaseSensor):
     _attr_name = "Daily energy"
     _attr_native_unit_of_measurement = UnitOfEnergy.WATT_HOUR
     _attr_device_class = SensorDeviceClass.ENERGY
+    _attr_state_class = SensorStateClass.TOTAL
     _attr_icon = "mdi:lightning-bolt"
 
     def __init__(self, coordinator, entry) -> None:
@@ -97,6 +99,11 @@ class SmaEnnexosDailyEnergySensor(SmaEnnexosBaseSensor):
     @property
     def native_value(self) -> float | None:
         return self.coordinator.data.get("daily_wh")
+
+    @property
+    def last_reset(self) -> datetime | None:
+        now = datetime.now()
+        return now.replace(hour=0, minute=0, second=0, microsecond=0)
 
 
 class SmaEnnexosPlantNameSensor(SmaEnnexosBaseSensor):
