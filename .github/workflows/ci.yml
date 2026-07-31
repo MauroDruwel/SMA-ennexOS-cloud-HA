@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Validate manifest.json with hassfest
+        uses: home-assistant/actions/hassfest@master
+
+      - name: Check Python syntax
+        run: |
+          python -m py_compile custom_components/sma_ennexos_cloud/__init__.py
+          python -m py_compile custom_components/sma_ennexos_cloud/config_flow.py
+          python -m py_compile custom_components/sma_ennexos_cloud/coordinator.py
+          python -m py_compile custom_components/sma_ennexos_cloud/sensor.py
+          python -m py_compile custom_components/sma_ennexos_cloud/const.py
+
+      - name: Check JSON syntax
+        run: |
+          python -m json.tool custom_components/sma_ennexos_cloud/manifest.json > /dev/null
+          python -m json.tool custom_components/sma_ennexos_cloud/translations/en.json > /dev/null
+          python -m json.tool hacs.json > /dev/null
