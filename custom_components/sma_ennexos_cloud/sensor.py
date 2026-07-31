@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import TYPE_CHECKING
 
 from homeassistant.components.sensor import (
@@ -13,6 +13,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN
 from .coordinator import SmaEnnexosCloudDataUpdateCoordinator
@@ -77,12 +78,6 @@ class SmaEnnexosPowerSensor(SmaEnnexosBaseSensor):
     def native_value(self) -> float | None:
         return self.coordinator.data.get("power")
 
-    @property
-    def extra_state_attributes(self) -> dict:
-        return {
-            "timestamp": self.coordinator.data.get("power_timestamp", ""),
-        }
-
 
 class SmaEnnexosDailyEnergySensor(SmaEnnexosBaseSensor):
     _attr_name = "Daily energy"
@@ -102,8 +97,7 @@ class SmaEnnexosDailyEnergySensor(SmaEnnexosBaseSensor):
 
     @property
     def last_reset(self) -> datetime | None:
-        now = datetime.now()
-        return now.replace(hour=0, minute=0, second=0, microsecond=0)
+        return dt_util.start_of_local_day()
 
 
 class SmaEnnexosPlantNameSensor(SmaEnnexosBaseSensor):
