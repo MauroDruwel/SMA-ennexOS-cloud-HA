@@ -122,6 +122,7 @@ class SmaEnnexosPlantNameSensor(SmaEnnexosBaseSensor):
 
 class SmaEnnexosLastSyncSensor(SmaEnnexosBaseSensor):
     _attr_name = "Last sync"
+    _attr_device_class = SensorDeviceClass.TIMESTAMP
     _attr_icon = "mdi:sync"
 
     def __init__(self, coordinator, entry) -> None:
@@ -130,5 +131,11 @@ class SmaEnnexosLastSyncSensor(SmaEnnexosBaseSensor):
         self._attr_device_info = get_plant_device_info(coordinator, entry)
 
     @property
-    def native_value(self) -> str | None:
-        return self.coordinator.data.get("power_timestamp")
+    def native_value(self) -> datetime | None:
+        timestamp_str = self.coordinator.data.get("power_timestamp")
+        if not timestamp_str:
+            return None
+        try:
+            return datetime.fromisoformat(timestamp_str.replace("Z", "+00:00"))
+        except (ValueError, AttributeError):
+            return None
