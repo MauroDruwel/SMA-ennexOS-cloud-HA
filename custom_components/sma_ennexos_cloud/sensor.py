@@ -97,7 +97,7 @@ class SmaEnnexosDailyEnergySensor(SmaEnnexosBaseSensor):
 
     @property
     def last_reset(self) -> datetime | None:
-        return dt_util.start_of_local_day()
+        return dt_util.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
 
 
 class SmaEnnexosPlantNameSensor(SmaEnnexosBaseSensor):
