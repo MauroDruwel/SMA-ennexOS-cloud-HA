@@ -17,5 +17,17 @@
     "abort": {
       "already_configured": "Dit account is al geconfigureerd."
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Peilingintervallen",
+        "description": "Stel in hoe vaak de integratie gegevens ophaalt van SMA ennexOS.",
+        "data": {
+          "poll_interval": "Interval live vermogen (seconden)",
+          "energy_poll_interval": "Interval dagelijkse energie (seconden)"
+        }
+      }
+    }
   }
 }
