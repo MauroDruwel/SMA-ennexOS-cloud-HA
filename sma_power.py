@@ -243,7 +243,7 @@ class SmaSession:
 
     def discover_plant(self) -> str:
         nav = self._api_get("/navigation").json()
-        plant_id = nav[0]["componentId"] if isinstance(nav, list) else nav["componentId"]
+        plant_id = nav[1]["componentId"] if isinstance(nav, list) else nav["componentId"]
         self.component_id = str(plant_id)
         return self.component_id
 
