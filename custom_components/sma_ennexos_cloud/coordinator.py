@@ -111,7 +111,7 @@ class SmaEnnexosCloudDataUpdateCoordinator(DataUpdateCoordinator):
             power = self.client.get_current_power()
             power_val = power.value
             power_ts = power.timestamp
-        except Exception as err:
+        except Exception as err:  # noqa: BLE001
             _LOGGER.debug("Could not read current power: %s", err)
             power_val = None
             power_ts = ""
@@ -120,7 +120,7 @@ class SmaEnnexosCloudDataUpdateCoordinator(DataUpdateCoordinator):
         if self._plant_name is None:
             try:
                 self._plant_name = self.client.get_plant_name()
-            except Exception:
+            except Exception:  # noqa: BLE001
                 self._plant_name = "SMA Plant"
 
         # --- Daily energy (throttled) ---
@@ -129,7 +129,7 @@ class SmaEnnexosCloudDataUpdateCoordinator(DataUpdateCoordinator):
                 energy = self.client.get_daily_energy()
                 self._last_daily_wh = energy.wh
                 self._last_energy_poll = now
-            except Exception as err:
+            except Exception as err:  # noqa: BLE001
                 _LOGGER.debug("Could not read daily energy: %s", err)
 
         return {
@@ -145,8 +145,8 @@ class SmaEnnexosCloudDataUpdateCoordinator(DataUpdateCoordinator):
 
         try:
             self.client.close()
-        except Exception:
-            pass
+        except Exception as err:  # noqa: BLE001
+            _LOGGER.debug("Error closing client before relogin: %s", err)
 
         self.client = SmaClient(
             username=self.entry.data[CONF_USERNAME],

@@ -1,13 +1,10 @@
 """Tests for entry setup and unload in SMA ennexOS Cloud."""
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch
-import pytest
+from unittest.mock import MagicMock
 
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
-
-from custom_components.sma_ennexos_cloud.const import DOMAIN
 
 
 async def test_setup_and_unload(

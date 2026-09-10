@@ -5,8 +5,7 @@ import logging
 from typing import Any
 
 import voluptuous as vol
-
-from homeassistant.config_entries import ConfigFlow, OptionsFlow, ConfigEntry
+from homeassistant.config_entries import ConfigEntry, ConfigFlow, OptionsFlow
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
 
@@ -17,11 +16,11 @@ from .const import (
     CONF_USERNAME,
     DEFAULT_ENERGY_POLL_INTERVAL,
     DEFAULT_POLL_INTERVAL,
+    DOMAIN,
     MAX_ENERGY_POLL_INTERVAL,
     MAX_POLL_INTERVAL,
     MIN_ENERGY_POLL_INTERVAL,
     MIN_POLL_INTERVAL,
-    DOMAIN,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -52,14 +51,14 @@ class SmaEnnexosCloudConfigFlow(ConfigFlow, domain=DOMAIN):
                     try:
                         client.login()
                         return True
-                    except Exception as err:
+                    except Exception as err:  # noqa: BLE001
                         _LOGGER.warning("Login test failed: %s", err)
                         return False
                     finally:
                         try:
                             client.close()
-                        except Exception:
-                            pass
+                        except Exception as err:  # noqa: BLE001
+                            _LOGGER.debug("Error closing test client: %s", err)
 
                 result = await self.hass.async_add_executor_job(_test_login)
                 if result:
@@ -71,8 +70,8 @@ class SmaEnnexosCloudConfigFlow(ConfigFlow, domain=DOMAIN):
                         },
                     )
                 errors["base"] = "invalid_auth"
-            except Exception as err:
-                _LOGGER.exception("Unexpected error during login: %s", err)
+            except Exception:
+                _LOGGER.exception("Unexpected error during login")
                 errors["base"] = "cannot_connect"
 
         return self.async_show_form(
