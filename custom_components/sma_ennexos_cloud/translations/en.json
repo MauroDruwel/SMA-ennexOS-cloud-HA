@@ -17,5 +17,17 @@
     "abort": {
       "already_configured": "This account is already configured."
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Polling intervals",
+        "description": "Adjust how often the integration polls SMA ennexOS for data.",
+        "data": {
+          "poll_interval": "Live power poll interval (seconds)",
+          "energy_poll_interval": "Daily energy poll interval (seconds)"
+        }
+      }
+    }
   }
 }

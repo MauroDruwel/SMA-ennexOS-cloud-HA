@@ -1,3 +1,4 @@
+"""Config and options flow for SMA ennexOS Cloud."""
 from __future__ import annotations
 
 import logging
@@ -5,15 +6,30 @@ from typing import Any
 
 import voluptuous as vol
 
-from homeassistant.config_entries import ConfigFlow
+from homeassistant.config_entries import ConfigFlow, OptionsFlow, ConfigEntry
+from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
 
-from .const import DOMAIN, CONF_USERNAME, CONF_PASSWORD
+from .const import (
+    CONF_ENERGY_POLL_INTERVAL,
+    CONF_PASSWORD,
+    CONF_POLL_INTERVAL,
+    CONF_USERNAME,
+    DEFAULT_ENERGY_POLL_INTERVAL,
+    DEFAULT_POLL_INTERVAL,
+    MAX_ENERGY_POLL_INTERVAL,
+    MAX_POLL_INTERVAL,
+    MIN_ENERGY_POLL_INTERVAL,
+    MIN_POLL_INTERVAL,
+    DOMAIN,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
 
 class SmaEnnexosCloudConfigFlow(ConfigFlow, domain=DOMAIN):
+    """Config flow for SMA ennexOS Cloud."""
+
     VERSION = 2
 
     async def async_step_user(
@@ -69,3 +85,47 @@ class SmaEnnexosCloudConfigFlow(ConfigFlow, domain=DOMAIN):
             ),
             errors=errors,
         )
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(config_entry: ConfigEntry) -> OptionsFlow:
+        return SmaEnnexosOptionsFlow(config_entry)
+
+
+class SmaEnnexosOptionsFlow(OptionsFlow):
+    """Options flow – lets users change polling intervals without re-entering credentials."""
+
+    def __init__(self, config_entry: ConfigEntry) -> None:
+        self._config_entry = config_entry
+
+    async def async_step_init(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        if user_input is not None:
+            return self.async_create_entry(title="", data=user_input)
+
+        current = self._config_entry.options
+        schema = vol.Schema(
+            {
+                vol.Optional(
+                    CONF_POLL_INTERVAL,
+                    default=current.get(CONF_POLL_INTERVAL, DEFAULT_POLL_INTERVAL),
+                ): vol.All(
+                    vol.Coerce(int),
+                    vol.Range(min=MIN_POLL_INTERVAL, max=MAX_POLL_INTERVAL),
+                ),
+                vol.Optional(
+                    CONF_ENERGY_POLL_INTERVAL,
+                    default=current.get(
+                        CONF_ENERGY_POLL_INTERVAL, DEFAULT_ENERGY_POLL_INTERVAL
+                    ),
+                ): vol.All(
+                    vol.Coerce(int),
+                    vol.Range(
+                        min=MIN_ENERGY_POLL_INTERVAL, max=MAX_ENERGY_POLL_INTERVAL
+                    ),
+                ),
+            }
+        )
+
+        return self.async_show_form(step_id="init", data_schema=schema)

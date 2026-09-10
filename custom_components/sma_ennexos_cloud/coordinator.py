@@ -1,76 +1,136 @@
-from datetime import timedelta
+"""DataUpdateCoordinator for SMA ennexOS Cloud."""
+from __future__ import annotations
+
 import logging
 import time
+from datetime import timedelta
 
-from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .const import DOMAIN, CONF_USERNAME, CONF_PASSWORD, POLL_INTERVAL, ENERGY_POLL_INTERVAL
+from .const import (
+    CONF_ENERGY_POLL_INTERVAL,
+    CONF_PASSWORD,
+    CONF_POLL_INTERVAL,
+    CONF_USERNAME,
+    DEFAULT_ENERGY_POLL_INTERVAL,
+    DEFAULT_POLL_INTERVAL,
+    DOMAIN,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
+# Maximum number of re-login attempts per poll cycle before giving up.
+_MAX_RELOGIN_ATTEMPTS = 2
+
 
 class SmaEnnexosCloudDataUpdateCoordinator(DataUpdateCoordinator):
+    """Coordinator that fetches live power and daily energy from SMA ennexOS."""
+
     def __init__(
         self, hass: HomeAssistant, entry: ConfigEntry, client
     ) -> None:
         self.entry = entry
         self.client = client
         self._last_energy_poll = 0.0
-        self._last_daily_wh = 0
-        self._plant_name = None
+        self._last_daily_wh: int | None = None
+        self._plant_name: str | None = None
+
+        poll_interval = entry.options.get(CONF_POLL_INTERVAL, DEFAULT_POLL_INTERVAL)
 
         super().__init__(
             hass,
             _LOGGER,
             name=DOMAIN,
-            update_interval=timedelta(seconds=POLL_INTERVAL),
+            update_interval=timedelta(seconds=poll_interval),
         )
+
+    # ------------------------------------------------------------------
+    # Public helpers
+    # ------------------------------------------------------------------
+
+    def update_poll_interval(self) -> None:
+        """Re-apply the poll interval from current options (call after options update)."""
+        self.update_interval = timedelta(
+            seconds=self.entry.options.get(CONF_POLL_INTERVAL, DEFAULT_POLL_INTERVAL)
+        )
+
+    # ------------------------------------------------------------------
+    # DataUpdateCoordinator hooks
+    # ------------------------------------------------------------------
 
     async def _async_update_data(self) -> dict:
         try:
-            return await self.hass.async_add_executor_job(
-                self._fetch_data
-            )
+            return await self.hass.async_add_executor_job(self._fetch_data)
+        except UpdateFailed:
+            raise
         except Exception as err:
             raise UpdateFailed(f"Error fetching SMA ennexOS data: {err}") from err
 
+    # ------------------------------------------------------------------
+    # Synchronous fetch (runs in executor)
+    # ------------------------------------------------------------------
+
     def _fetch_data(self) -> dict:
-        from sma_ennexos_cloud import SmaClient
+        """Fetch power + energy, re-authenticating on session expiry."""
+        for attempt in range(_MAX_RELOGIN_ATTEMPTS):
+            try:
+                return self._do_fetch()
+            except Exception as err:
+                err_str = str(err).lower()
+                session_expired = any(
+                    kw in err_str
+                    for kw in ("401", "unauthorized", "token", "expired", "login")
+                )
+                if session_expired and attempt < _MAX_RELOGIN_ATTEMPTS - 1:
+                    _LOGGER.warning(
+                        "SMA session appears expired (%s); re-authenticating (attempt %d/%d)",
+                        err,
+                        attempt + 1,
+                        _MAX_RELOGIN_ATTEMPTS,
+                    )
+                    self._relogin()
+                    # Reset energy poll timer so we refresh energy after re-auth too
+                    self._last_energy_poll = 0.0
+                else:
+                    raise UpdateFailed(f"Error fetching SMA ennexOS data: {err}") from err
 
-        if not hasattr(self.client, "access_token"):
-            self.client = SmaClient(
-                username=self.entry.data[CONF_USERNAME],
-                password=self.entry.data[CONF_PASSWORD],
-            )
-            self.client.login()
-            self._last_energy_poll = 0.0
-            self._last_daily_wh = 0
+        # Should not be reached, but satisfy the type checker.
+        raise UpdateFailed("Unexpected error in SMA data fetch loop")
 
+    def _do_fetch(self) -> dict:
+        """Perform the actual API calls (may raise if session is invalid)."""
         now = time.monotonic()
+        energy_poll_interval = self.entry.options.get(
+            CONF_ENERGY_POLL_INTERVAL, DEFAULT_ENERGY_POLL_INTERVAL
+        )
 
+        # --- Live power ---
         try:
             power = self.client.get_current_power()
             power_val = power.value
             power_ts = power.timestamp
-        except Exception:
+        except Exception as err:
+            _LOGGER.debug("Could not read current power: %s", err)
             power_val = None
             power_ts = ""
 
+        # --- Plant name (once) ---
         if self._plant_name is None:
             try:
                 self._plant_name = self.client.get_plant_name()
             except Exception:
                 self._plant_name = "SMA Plant"
 
-        if now - self._last_energy_poll >= ENERGY_POLL_INTERVAL:
+        # --- Daily energy (throttled) ---
+        if now - self._last_energy_poll >= energy_poll_interval:
             try:
                 energy = self.client.get_daily_energy()
                 self._last_daily_wh = energy.wh
                 self._last_energy_poll = now
-            except Exception:
-                pass
+            except Exception as err:
+                _LOGGER.debug("Could not read daily energy: %s", err)
 
         return {
             "power": power_val,
@@ -78,3 +138,19 @@ class SmaEnnexosCloudDataUpdateCoordinator(DataUpdateCoordinator):
             "daily_wh": self._last_daily_wh,
             "plant_name": self._plant_name,
         }
+
+    def _relogin(self) -> None:
+        """Force a fresh login, replacing the client's session."""
+        from sma_ennexos_cloud import SmaClient
+
+        try:
+            self.client.close()
+        except Exception:
+            pass
+
+        self.client = SmaClient(
+            username=self.entry.data[CONF_USERNAME],
+            password=self.entry.data[CONF_PASSWORD],
+        )
+        self.client.login()
+        _LOGGER.info("SMA ennexOS: re-authentication successful")
