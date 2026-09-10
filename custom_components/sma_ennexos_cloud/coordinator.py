@@ -1,4 +1,5 @@
 """DataUpdateCoordinator for SMA ennexOS Cloud."""
+
 from __future__ import annotations
 
 import logging
@@ -28,9 +29,7 @@ _MAX_RELOGIN_ATTEMPTS = 2
 class SmaEnnexosCloudDataUpdateCoordinator(DataUpdateCoordinator):
     """Coordinator that fetches live power and daily energy from SMA ennexOS."""
 
-    def __init__(
-        self, hass: HomeAssistant, entry: ConfigEntry, client
-    ) -> None:
+    def __init__(self, hass: HomeAssistant, entry: ConfigEntry, client) -> None:
         self.entry = entry
         self.client = client
         self._last_energy_poll = 0.0
@@ -94,7 +93,9 @@ class SmaEnnexosCloudDataUpdateCoordinator(DataUpdateCoordinator):
                     # Reset energy poll timer so we refresh energy after re-auth too
                     self._last_energy_poll = 0.0
                 else:
-                    raise UpdateFailed(f"Error fetching SMA ennexOS data: {err}") from err
+                    raise UpdateFailed(
+                        f"Error fetching SMA ennexOS data: {err}"
+                    ) from err
 
         # Should not be reached, but satisfy the type checker.
         raise UpdateFailed("Unexpected error in SMA data fetch loop")

@@ -1,4 +1,5 @@
 """Config and options flow for SMA ennexOS Cloud."""
+
 from __future__ import annotations
 
 import logging

@@ -8,7 +8,7 @@ CONF_POLL_INTERVAL = "poll_interval"
 CONF_ENERGY_POLL_INTERVAL = "energy_poll_interval"
 
 # Defaults
-DEFAULT_POLL_INTERVAL = 30          # seconds – live power
+DEFAULT_POLL_INTERVAL = 30  # seconds – live power
 DEFAULT_ENERGY_POLL_INTERVAL = 300  # seconds – daily energy (5 min)
 MIN_POLL_INTERVAL = 10
 MAX_POLL_INTERVAL = 300

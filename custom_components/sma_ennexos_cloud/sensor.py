@@ -40,7 +40,9 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
-def get_plant_device_info(coordinator: SmaEnnexosCloudDataUpdateCoordinator, entry: ConfigEntry) -> DeviceInfo:
+def get_plant_device_info(
+    coordinator: SmaEnnexosCloudDataUpdateCoordinator, entry: ConfigEntry
+) -> DeviceInfo:
     plant_name = coordinator.data.get("plant_name", "SMA Plant")
     return DeviceInfo(
         identifiers={(DOMAIN, f"{entry.entry_id}_plant")},
