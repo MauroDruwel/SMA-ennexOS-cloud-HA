@@ -52,12 +52,8 @@ def mock_sma_client() -> Generator[MagicMock]:
         client = MagicMock()
         client.login.return_value = True
         client.close.return_value = None
-        client.get_live_measurements.return_value = {
-            "Power_Total": 4500.0,
-            "Grid_Feed_In": 3200.0,
-        }
-        client.get_plants.return_value = [
-            {"plantId": "plant_1", "name": "SMA Solar Plant"}
-        ]
+        client.get_current_power.return_value = 4500.0
+        client.get_plant_name.return_value = "SMA Solar Plant"
+        client.get_daily_energy.return_value = 25.4
         mock_cls.return_value = client
         yield client

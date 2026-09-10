@@ -22,6 +22,7 @@ async def test_flow_user_success(hass: HomeAssistant) -> None:
     with patch("sma_ennexos_cloud.SmaClient") as mock_client_cls:
         mock_client = MagicMock()
         mock_client.login.return_value = True
+        mock_client.get_plant_name.return_value = "SMA Solar Plant"
         mock_client_cls.return_value = mock_client
 
         result = await hass.config_entries.flow.async_init(
