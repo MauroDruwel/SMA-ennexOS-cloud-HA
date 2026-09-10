@@ -38,7 +38,7 @@ async def test_flow_user_success(hass: HomeAssistant) -> None:
             },
         )
         assert result2["type"] is FlowResultType.CREATE_ENTRY
-        assert result2["title"] == "SMA ennexOS Cloud (new_user@example.com)"
+        assert result2["title"] == "SMA ennexOS (new_user@example.com)"
         assert result2["data"][CONF_USERNAME] == "new_user@example.com"
 
 
