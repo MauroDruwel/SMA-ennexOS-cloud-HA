@@ -7,6 +7,7 @@ from unittest.mock import MagicMock, patch
 from homeassistant.config_entries import SOURCE_USER
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
+from sma_ennexos_cloud.exceptions import AuthenticationError
 from sma_ennexos_cloud.models import PlantInfo
 
 from custom_components.sma_ennexos_cloud.const import (
@@ -90,7 +91,7 @@ async def test_flow_user_invalid_auth(hass: HomeAssistant) -> None:
     """Test login failure triggers invalid_auth error."""
     with patch("sma_ennexos_cloud.SmaClient") as mock_client_cls:
         mock_client = MagicMock()
-        mock_client.login.side_effect = Exception("401 Unauthorized")
+        mock_client.login.side_effect = AuthenticationError("401 Unauthorized")
         mock_client_cls.return_value = mock_client
 
         result = await hass.config_entries.flow.async_init(
@@ -105,6 +106,27 @@ async def test_flow_user_invalid_auth(hass: HomeAssistant) -> None:
         )
         assert result2["type"] is FlowResultType.FORM
         assert result2["errors"]["base"] == "invalid_auth"
+
+
+async def test_flow_user_cannot_connect(hass: HomeAssistant) -> None:
+    """Test connection failure triggers cannot_connect error."""
+    with patch("sma_ennexos_cloud.SmaClient") as mock_client_cls:
+        mock_client = MagicMock()
+        mock_client.login.side_effect = Exception("Connection error")
+        mock_client_cls.return_value = mock_client
+
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN, context={"source": SOURCE_USER}
+        )
+        result2 = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {
+                CONF_USERNAME: "error@example.com",
+                CONF_PASSWORD: "password",
+            },
+        )
+        assert result2["type"] is FlowResultType.FORM
+        assert result2["errors"]["base"] == "cannot_connect"
 
 
 async def test_flow_user_no_plants(hass: HomeAssistant) -> None:
