@@ -2,6 +2,9 @@ DOMAIN = "sma_ennexos_cloud"
 
 CONF_USERNAME = "username"
 CONF_PASSWORD = "password"
+CONF_PLANT_ID = "plant_id"
+CONF_PLANT_NAME = "plant_name"
+
 
 # Options
 CONF_POLL_INTERVAL = "poll_interval"

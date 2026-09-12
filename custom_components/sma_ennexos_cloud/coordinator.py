@@ -13,6 +13,8 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from .const import (
     CONF_ENERGY_POLL_INTERVAL,
     CONF_PASSWORD,
+    CONF_PLANT_ID,
+    CONF_PLANT_NAME,
     CONF_POLL_INTERVAL,
     CONF_USERNAME,
     DEFAULT_ENERGY_POLL_INTERVAL,
@@ -34,7 +36,7 @@ class SmaEnnexosCloudDataUpdateCoordinator(DataUpdateCoordinator):
         self.client = client
         self._last_energy_poll = 0.0
         self._last_daily_wh: int | None = None
-        self._plant_name: str | None = None
+        self._plant_name: str | None = entry.data.get(CONF_PLANT_NAME)
 
         poll_interval = entry.options.get(CONF_POLL_INTERVAL, DEFAULT_POLL_INTERVAL)
 
@@ -122,7 +124,7 @@ class SmaEnnexosCloudDataUpdateCoordinator(DataUpdateCoordinator):
             try:
                 self._plant_name = self.client.get_plant_name()
             except Exception:  # noqa: BLE001
-                self._plant_name = "SMA Plant"
+                self._plant_name = self.entry.data.get(CONF_PLANT_NAME, "SMA Plant")
 
         # --- Daily energy (throttled) ---
         if now - self._last_energy_poll >= energy_poll_interval:
@@ -152,6 +154,7 @@ class SmaEnnexosCloudDataUpdateCoordinator(DataUpdateCoordinator):
         self.client = SmaClient(
             username=self.entry.data[CONF_USERNAME],
             password=self.entry.data[CONF_PASSWORD],
+            component_id=self.entry.data.get(CONF_PLANT_ID),
         )
         self.client.login()
         _LOGGER.info("SMA ennexOS: re-authentication successful")

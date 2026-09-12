@@ -13,6 +13,8 @@ from homeassistant.data_entry_flow import FlowResult
 from .const import (
     CONF_ENERGY_POLL_INTERVAL,
     CONF_PASSWORD,
+    CONF_PLANT_ID,
+    CONF_PLANT_NAME,
     CONF_POLL_INTERVAL,
     CONF_USERNAME,
     DEFAULT_ENERGY_POLL_INTERVAL,
@@ -32,6 +34,12 @@ class SmaEnnexosCloudConfigFlow(ConfigFlow, domain=DOMAIN):
 
     VERSION = 2
 
+    def __init__(self) -> None:
+        """Initialize flow."""
+        self._username: str | None = None
+        self._password: str | None = None
+        self._available_plants: dict[str, str] = {}
+
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
@@ -41,38 +49,71 @@ class SmaEnnexosCloudConfigFlow(ConfigFlow, domain=DOMAIN):
             username = user_input[CONF_USERNAME]
             password = user_input[CONF_PASSWORD]
 
-            await self.async_set_unique_id(username)
-            self._abort_if_unique_id_configured()
-
             try:
                 from sma_ennexos_cloud import SmaClient
+                from sma_ennexos_cloud.exceptions import AuthenticationError
 
-                def _test_login():
+                def _login_and_get_plants():
                     client = SmaClient(username=username, password=password)
                     try:
                         client.login()
-                        return True
-                    except Exception as err:  # noqa: BLE001
-                        _LOGGER.warning("Login test failed: %s", err)
-                        return False
+                        plants = client.get_plants()
+                        return [
+                            {"component_id": p.component_id, "name": p.name}
+                            for p in plants
+                        ]
                     finally:
                         try:
                             client.close()
                         except Exception as err:  # noqa: BLE001
                             _LOGGER.debug("Error closing test client: %s", err)
 
-                result = await self.hass.async_add_executor_job(_test_login)
-                if result:
+                plants = await self.hass.async_add_executor_job(_login_and_get_plants)
+                if not plants:
+                    return self.async_abort(reason="no_plants_found")
+
+                existing_plant_ids = {
+                    entry.data[CONF_PLANT_ID]
+                    for entry in self._async_current_entries()
+                    if CONF_PLANT_ID in entry.data
+                }
+                available_plants = [
+                    p for p in plants if p["component_id"] not in existing_plant_ids
+                ]
+
+                if not available_plants:
+                    return self.async_abort(reason="already_configured")
+
+                if len(available_plants) == 1:
+                    plant = available_plants[0]
+                    plant_id = plant["component_id"]
+                    plant_name = plant["name"]
+
+                    await self.async_set_unique_id(f"{username}_{plant_id}")
+                    self._abort_if_unique_id_configured()
+
                     return self.async_create_entry(
-                        title=f"SMA ennexOS ({username})",
+                        title=f"SMA ennexOS ({plant_name})",
                         data={
                             CONF_USERNAME: username,
                             CONF_PASSWORD: password,
+                            CONF_PLANT_ID: plant_id,
+                            CONF_PLANT_NAME: plant_name,
                         },
                     )
+
+                self._username = username
+                self._password = password
+                self._available_plants = {
+                    p["component_id"]: p["name"] for p in available_plants
+                }
+                return await self.async_step_plant()
+
+            except AuthenticationError as err:
+                _LOGGER.warning("Login authentication failed: %s", err)
                 errors["base"] = "invalid_auth"
-            except Exception:
-                _LOGGER.exception("Unexpected error during login")
+            except Exception as err:
+                _LOGGER.exception("Unexpected error during login: %s", err)
                 errors["base"] = "cannot_connect"
 
         return self.async_show_form(
@@ -84,6 +125,36 @@ class SmaEnnexosCloudConfigFlow(ConfigFlow, domain=DOMAIN):
                 }
             ),
             errors=errors,
+        )
+
+    async def async_step_plant(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Handle plant selection when multiple plants are found."""
+        if user_input is not None:
+            plant_id = user_input[CONF_PLANT_ID]
+            plant_name = self._available_plants.get(plant_id, plant_id)
+
+            await self.async_set_unique_id(f"{self._username}_{plant_id}")
+            self._abort_if_unique_id_configured()
+
+            return self.async_create_entry(
+                title=f"SMA ennexOS ({plant_name})",
+                data={
+                    CONF_USERNAME: self._username,
+                    CONF_PASSWORD: self._password,
+                    CONF_PLANT_ID: plant_id,
+                    CONF_PLANT_NAME: plant_name,
+                },
+            )
+
+        return self.async_show_form(
+            step_id="plant",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_PLANT_ID): vol.In(self._available_plants),
+                }
+            ),
         )
 
     @staticmethod

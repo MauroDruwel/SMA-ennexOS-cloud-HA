@@ -50,10 +50,15 @@ def mock_config_entry() -> MockConfigEntry:
 @pytest.fixture
 def mock_sma_client() -> Generator[MagicMock]:
     """Patch SmaClient."""
+    from sma_ennexos_cloud.models import PlantInfo
+
     with patch("sma_ennexos_cloud.SmaClient") as mock_cls:
         client = MagicMock()
         client.login.return_value = True
         client.close.return_value = None
+        client.get_plants.return_value = [
+            PlantInfo(component_id="17478443", name="SMA Solar Plant")
+        ]
         client.get_current_power.return_value = 4500.0
         client.get_plant_name.return_value = "SMA Solar Plant"
         client.get_daily_energy.return_value = 25.4

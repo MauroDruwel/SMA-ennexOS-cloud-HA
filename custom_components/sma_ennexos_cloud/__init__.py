@@ -8,7 +8,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 
-from .const import CONF_PASSWORD, CONF_USERNAME
+from .const import CONF_PASSWORD, CONF_PLANT_ID, CONF_USERNAME
 from .coordinator import SmaEnnexosCloudDataUpdateCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -26,6 +26,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SmaEnnexosConfigEntry) -
         client = SmaClient(
             username=entry.data[CONF_USERNAME],
             password=entry.data[CONF_PASSWORD],
+            component_id=entry.data.get(CONF_PLANT_ID),
         )
         client.login()
         return client

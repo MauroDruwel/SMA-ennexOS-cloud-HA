@@ -8,6 +8,13 @@
           "username": "Gebruikersnaam",
           "password": "Wachtwoord"
         }
+      },
+      "plant": {
+        "title": "Installatie selecteren",
+        "description": "Selecteer de SMA installatie die je aan Home Assistant wilt toevoegen.",
+        "data": {
+          "plant_id": "Installatie"
+        }
       }
     },
     "error": {
@@ -15,7 +22,8 @@
       "invalid_auth": "Ongeldige gebruikersnaam of wachtwoord."
     },
     "abort": {
-      "already_configured": "Dit account is al geconfigureerd."
+      "already_configured": "Deze installatie is al geconfigureerd.",
+      "no_plants_found": "Geen installaties gevonden op dit SMA ID account."
     }
   },
   "options": {
