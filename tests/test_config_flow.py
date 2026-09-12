@@ -7,6 +7,7 @@ from unittest.mock import MagicMock, patch
 from homeassistant.config_entries import SOURCE_USER
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
+from sma_ennexos_cloud.models import PlantInfo
 
 from custom_components.sma_ennexos_cloud.const import (
     CONF_ENERGY_POLL_INTERVAL,
@@ -17,7 +18,6 @@ from custom_components.sma_ennexos_cloud.const import (
     CONF_USERNAME,
     DOMAIN,
 )
-from sma_ennexos_cloud.models import PlantInfo
 
 
 async def test_flow_user_single_plant(hass: HomeAssistant) -> None:

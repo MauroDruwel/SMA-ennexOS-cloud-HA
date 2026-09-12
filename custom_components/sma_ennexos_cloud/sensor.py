@@ -16,7 +16,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
-from .const import DOMAIN, CONF_PLANT_ID, CONF_PLANT_NAME
+from .const import CONF_PLANT_ID, CONF_PLANT_NAME, DOMAIN
 from .coordinator import SmaEnnexosCloudDataUpdateCoordinator
 
 if TYPE_CHECKING:
@@ -44,7 +44,9 @@ def get_plant_device_info(
     coordinator: SmaEnnexosCloudDataUpdateCoordinator, entry: ConfigEntry
 ) -> DeviceInfo:
     plant_id = entry.data.get(CONF_PLANT_ID, entry.entry_id)
-    plant_name = coordinator.data.get("plant_name") or entry.data.get(CONF_PLANT_NAME, "SMA Plant")
+    plant_name = coordinator.data.get("plant_name") or entry.data.get(
+        CONF_PLANT_NAME, "SMA Plant"
+    )
     return DeviceInfo(
         identifiers={(DOMAIN, f"{plant_id}_plant")},
         name=plant_name,
