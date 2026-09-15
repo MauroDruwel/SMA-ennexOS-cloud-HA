@@ -19,10 +19,12 @@ from .const import (
     CONF_POLL_INTERVAL,
     CONF_PORTAL_STATUS_POLL_INTERVAL,
     CONF_USERNAME,
+    CONF_WEATHER_POLL_INTERVAL,
     DEFAULT_CHECK_PORTAL_STATUS,
     DEFAULT_ENERGY_POLL_INTERVAL,
     DEFAULT_POLL_INTERVAL,
     DEFAULT_PORTAL_STATUS_POLL_INTERVAL,
+    DEFAULT_WEATHER_POLL_INTERVAL,
     DOMAIN,
 )
 
@@ -42,6 +44,8 @@ class SmaEnnexosCloudDataUpdateCoordinator(DataUpdateCoordinator):
         self._last_daily_wh: int | None = None
         self._last_portal_poll = 0.0
         self._last_live_data_status: str | None = None
+        self._last_weather_poll = 0.0
+        self._last_weather_data = None
         self._plant_name: str | None = entry.data.get(CONF_PLANT_NAME)
 
         poll_interval = entry.options.get(CONF_POLL_INTERVAL, DEFAULT_POLL_INTERVAL)
@@ -98,8 +102,9 @@ class SmaEnnexosCloudDataUpdateCoordinator(DataUpdateCoordinator):
                         _MAX_RELOGIN_ATTEMPTS,
                     )
                     self._relogin()
-                    # Reset energy poll timer so we refresh energy after re-auth too
+                    # Reset energy and weather poll timers so we refresh after re-auth too
                     self._last_energy_poll = 0.0
+                    self._last_weather_poll = 0.0
                 else:
                     raise UpdateFailed(
                         f"Error fetching SMA ennexOS data: {err}"
@@ -160,12 +165,27 @@ class SmaEnnexosCloudDataUpdateCoordinator(DataUpdateCoordinator):
             except Exception as err:  # noqa: BLE001
                 _LOGGER.debug("Could not read live data status: %s", err)
 
+        # --- Weather (throttled) ---
+        weather_poll_interval = self.entry.options.get(
+            CONF_WEATHER_POLL_INTERVAL, DEFAULT_WEATHER_POLL_INTERVAL
+        )
+        if (
+            now - self._last_weather_poll >= weather_poll_interval
+            or self._last_weather_data is None
+        ):
+            try:
+                self._last_weather_data = self.client.get_weather()
+                self._last_weather_poll = now
+            except Exception as err:  # noqa: BLE001
+                _LOGGER.debug("Could not read weather data: %s", err)
+
         return {
             "power": power_val,
             "power_timestamp": power_ts,
             "daily_wh": self._last_daily_wh,
             "plant_name": self._plant_name,
             "live_data_status": self._last_live_data_status,
+            "weather": self._last_weather_data,
         }
 
     def _relogin(self) -> None:

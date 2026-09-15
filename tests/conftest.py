@@ -50,7 +50,12 @@ def mock_config_entry() -> MockConfigEntry:
 @pytest.fixture
 def mock_sma_client() -> Generator[MagicMock]:
     """Patch SmaClient."""
-    from sma_ennexos_cloud.models import PlantInfo
+    from sma_ennexos_cloud.models import (
+        PlantInfo,
+        WeatherCurrent,
+        WeatherData,
+        WeatherTomorrow,
+    )
 
     with patch("sma_ennexos_cloud.SmaClient") as mock_cls:
         client = MagicMock()
@@ -63,5 +68,23 @@ def mock_sma_client() -> Generator[MagicMock]:
         client.get_plant_name.return_value = "SMA Solar Plant"
         client.get_daily_energy.return_value = 25.4
         client.get_live_data_status.return_value = "operational"
+        client.get_weather.return_value = WeatherData(
+            city="Tielt",
+            now=WeatherCurrent(
+                time="2026-09-15T12:00:00Z",
+                icon_id=2,
+                temperature=24.0,
+                condition="cloudy",
+                description="Cloudy",
+            ),
+            tomorrow=WeatherTomorrow(
+                date="2026-09-15T22:00:00Z",
+                icon_id=0,
+                min_temperature=13.0,
+                max_temperature=18.0,
+                condition="sunny",
+                description="Cloudless",
+            ),
+        )
         mock_cls.return_value = client
         yield client

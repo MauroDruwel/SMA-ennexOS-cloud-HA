@@ -85,13 +85,16 @@ No browser, no scraping, no Docker add-on. Just the `sma_ennexos_cloud` Python l
 
 Once configured, you'll get the following sensors under your plant device:
 
-| Sensor | Unit | Category | Description |
+| Entity | Unit | Category | Description |
 |--------|------|----------|-------------|
+| **Weather** | °C | Weather | Plant's local weather conditions, current temperature, and tomorrow's forecast |
 | **Current Power** | W | Primary | Live PV production |
 | **Daily Energy** | Wh | Primary | Total energy produced today |
 | **Plant Name** | — | Diagnostic | Your installation's name |
 | **Last Sync** | — | Diagnostic | Timestamp of last data fetch |
 | **Live data status** | — | Diagnostic | Status of ennexOS Live Data (`operational`, `under_maintenance`, etc.) |
+
+
 
 ---
 
