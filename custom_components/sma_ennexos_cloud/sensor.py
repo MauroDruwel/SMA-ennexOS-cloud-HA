@@ -9,7 +9,7 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import UnitOfEnergy, UnitOfPower
+from homeassistant.const import EntityCategory, UnitOfEnergy, UnitOfPower
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -35,6 +35,7 @@ async def async_setup_entry(
         SmaEnnexosDailyEnergySensor(coordinator, entry),
         SmaEnnexosPlantNameSensor(coordinator, entry),
         SmaEnnexosLastSyncSensor(coordinator, entry),
+        SmaEnnexosLiveDataStatusSensor(coordinator, entry),
     ]
 
     async_add_entities(entities)
@@ -139,3 +140,28 @@ class SmaEnnexosLastSyncSensor(SmaEnnexosBaseSensor):
             return datetime.fromisoformat(timestamp_str.replace("Z", "+00:00"))
         except (ValueError, AttributeError):
             return None
+
+
+class SmaEnnexosLiveDataStatusSensor(SmaEnnexosBaseSensor):
+    """Sensor reporting the status of SMA ennexOS Live Data."""
+
+    _attr_name = "Live data status"
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(self, coordinator, entry) -> None:
+        super().__init__(coordinator, entry)
+        self._attr_unique_id = f"{entry.entry_id}_live_data_status"
+        self._attr_device_info = get_plant_device_info(coordinator, entry)
+
+    @property
+    def native_value(self) -> str | None:
+        return self.coordinator.data.get("live_data_status")
+
+    @property
+    def icon(self) -> str:
+        val = self.native_value
+        if val == "operational":
+            return "mdi:check-circle-outline"
+        if val == "under_maintenance":
+            return "mdi:wrench"
+        return "mdi:alert-circle-outline"

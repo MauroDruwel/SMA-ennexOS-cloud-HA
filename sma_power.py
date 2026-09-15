@@ -11,8 +11,7 @@ import os
 import re
 import sys
 import urllib.parse
-from datetime import datetime, timedelta, timezone
-from typing import Optional
+from datetime import UTC, datetime, timedelta
 
 import requests
 
@@ -56,9 +55,9 @@ class SmaSession:
         self.password = password
         self._http = requests.Session()
         self._http.headers.update(BROWSER_HEADERS)
-        self.access_token: Optional[str] = None
-        self.refresh_token: Optional[str] = None
-        self.component_id: Optional[str] = None
+        self.access_token: str | None = None
+        self.refresh_token: str | None = None
+        self.component_id: str | None = None
 
     # ── Auth ──────────────────────────────────────────────────────────
 
@@ -128,9 +127,7 @@ class SmaSession:
         qs = urllib.parse.parse_qs(parsed.query)
         auth_code = qs.get("code", [None])[0]
         if not auth_code:
-            raise RuntimeError(
-                f"No auth code in redirect URL: {location}"
-            )
+            raise RuntimeError(f"No auth code in redirect URL: {location}")
 
         # 5. Exchange auth code for tokens
         r3 = self._http.post(
@@ -182,7 +179,7 @@ class SmaSession:
             self.refresh_token = token_data["refresh_token"]
 
     @staticmethod
-    def _parse_form_action(html: str) -> Optional[str]:
+    def _parse_form_action(html: str) -> str | None:
         m = re.search(
             r'<form[^>]*\saction=["\']([^"\']+)["\']',
             html,
@@ -243,7 +240,9 @@ class SmaSession:
 
     def discover_plant(self) -> str:
         nav = self._api_get("/navigation").json()
-        plant_id = nav[0]["componentId"] if isinstance(nav, list) else nav["componentId"]
+        plant_id = (
+            nav[0]["componentId"] if isinstance(nav, list) else nav["componentId"]
+        )
         self.component_id = str(plant_id)
         return self.component_id
 
@@ -253,7 +252,7 @@ class SmaSession:
         if not self.component_id:
             self.discover_plant()
         r = self._api_get(
-            f"/widgets/gauge/power",
+            "/widgets/gauge/power",
             params={
                 "componentId": self.component_id,
                 "type": "PvProduction",
@@ -276,7 +275,7 @@ class SmaSession:
     def get_daily_energy(self) -> dict:
         if not self.component_id:
             self.discover_plant()
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         prev = now - timedelta(days=1)
         r = self._api_post(
             "/measurements/search",
@@ -311,8 +310,8 @@ class SmaSession:
 
 # ── CLI ───────────────────────────────────────────────────────────────
 
-POLL_INTERVAL = 5      # seconds – power gauge (matches website)
-ENERGY_INTERVAL = 30   # seconds – daily energy (slow-changing meter value)
+POLL_INTERVAL = 5  # seconds – power gauge (matches website)
+ENERGY_INTERVAL = 30  # seconds – daily energy (slow-changing meter value)
 
 
 def main():

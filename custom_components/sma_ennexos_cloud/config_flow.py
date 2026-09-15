@@ -11,19 +11,25 @@ from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
 
 from .const import (
+    CONF_CHECK_PORTAL_STATUS,
     CONF_ENERGY_POLL_INTERVAL,
     CONF_PASSWORD,
     CONF_PLANT_ID,
     CONF_PLANT_NAME,
     CONF_POLL_INTERVAL,
+    CONF_PORTAL_STATUS_POLL_INTERVAL,
     CONF_USERNAME,
+    DEFAULT_CHECK_PORTAL_STATUS,
     DEFAULT_ENERGY_POLL_INTERVAL,
     DEFAULT_POLL_INTERVAL,
+    DEFAULT_PORTAL_STATUS_POLL_INTERVAL,
     DOMAIN,
     MAX_ENERGY_POLL_INTERVAL,
     MAX_POLL_INTERVAL,
+    MAX_PORTAL_STATUS_POLL_INTERVAL,
     MIN_ENERGY_POLL_INTERVAL,
     MIN_POLL_INTERVAL,
+    MIN_PORTAL_STATUS_POLL_INTERVAL,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -194,6 +200,25 @@ class SmaEnnexosOptionsFlow(OptionsFlow):
                     vol.Coerce(int),
                     vol.Range(
                         min=MIN_ENERGY_POLL_INTERVAL, max=MAX_ENERGY_POLL_INTERVAL
+                    ),
+                ),
+                vol.Optional(
+                    CONF_CHECK_PORTAL_STATUS,
+                    default=current.get(
+                        CONF_CHECK_PORTAL_STATUS, DEFAULT_CHECK_PORTAL_STATUS
+                    ),
+                ): bool,
+                vol.Optional(
+                    CONF_PORTAL_STATUS_POLL_INTERVAL,
+                    default=current.get(
+                        CONF_PORTAL_STATUS_POLL_INTERVAL,
+                        DEFAULT_PORTAL_STATUS_POLL_INTERVAL,
+                    ),
+                ): vol.All(
+                    vol.Coerce(int),
+                    vol.Range(
+                        min=MIN_PORTAL_STATUS_POLL_INTERVAL,
+                        max=MAX_PORTAL_STATUS_POLL_INTERVAL,
                     ),
                 ),
             }

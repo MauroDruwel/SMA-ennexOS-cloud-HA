@@ -33,9 +33,12 @@
         "description": "Adjust how often the integration polls SMA ennexOS for data.",
         "data": {
           "poll_interval": "Live power poll interval (seconds)",
-          "energy_poll_interval": "Daily energy poll interval (seconds)"
+          "energy_poll_interval": "Daily energy poll interval (seconds)",
+          "check_portal_status": "Enable portal status diagnostic sensors",
+          "portal_status_poll_interval": "Portal status poll interval (seconds)"
         }
       }
     }
   }
 }
+

@@ -11,14 +11,18 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import (
+    CONF_CHECK_PORTAL_STATUS,
     CONF_ENERGY_POLL_INTERVAL,
     CONF_PASSWORD,
     CONF_PLANT_ID,
     CONF_PLANT_NAME,
     CONF_POLL_INTERVAL,
+    CONF_PORTAL_STATUS_POLL_INTERVAL,
     CONF_USERNAME,
+    DEFAULT_CHECK_PORTAL_STATUS,
     DEFAULT_ENERGY_POLL_INTERVAL,
     DEFAULT_POLL_INTERVAL,
+    DEFAULT_PORTAL_STATUS_POLL_INTERVAL,
     DOMAIN,
 )
 
@@ -36,6 +40,8 @@ class SmaEnnexosCloudDataUpdateCoordinator(DataUpdateCoordinator):
         self.client = client
         self._last_energy_poll = 0.0
         self._last_daily_wh: int | None = None
+        self._last_portal_poll = 0.0
+        self._last_live_data_status: str | None = None
         self._plant_name: str | None = entry.data.get(CONF_PLANT_NAME)
 
         poll_interval = entry.options.get(CONF_POLL_INTERVAL, DEFAULT_POLL_INTERVAL)
@@ -135,11 +141,31 @@ class SmaEnnexosCloudDataUpdateCoordinator(DataUpdateCoordinator):
             except Exception as err:  # noqa: BLE001
                 _LOGGER.debug("Could not read daily energy: %s", err)
 
+        # --- Live Data status (throttled) ---
+        check_portal = self.entry.options.get(
+            CONF_CHECK_PORTAL_STATUS, DEFAULT_CHECK_PORTAL_STATUS
+        )
+        portal_poll_interval = self.entry.options.get(
+            CONF_PORTAL_STATUS_POLL_INTERVAL, DEFAULT_PORTAL_STATUS_POLL_INTERVAL
+        )
+        if check_portal and (
+            now - self._last_portal_poll >= portal_poll_interval
+            or self._last_live_data_status is None
+        ):
+            try:
+                self._last_live_data_status = self.client.get_live_data_status(
+                    force_refresh=True
+                )
+                self._last_portal_poll = now
+            except Exception as err:  # noqa: BLE001
+                _LOGGER.debug("Could not read live data status: %s", err)
+
         return {
             "power": power_val,
             "power_timestamp": power_ts,
             "daily_wh": self._last_daily_wh,
             "plant_name": self._plant_name,
+            "live_data_status": self._last_live_data_status,
         }
 
     def _relogin(self) -> None:
@@ -151,10 +177,14 @@ class SmaEnnexosCloudDataUpdateCoordinator(DataUpdateCoordinator):
         except Exception as err:  # noqa: BLE001
             _LOGGER.debug("Error closing client before relogin: %s", err)
 
+        check_status = self.entry.options.get(
+            CONF_CHECK_PORTAL_STATUS, DEFAULT_CHECK_PORTAL_STATUS
+        )
         self.client = SmaClient(
             username=self.entry.data[CONF_USERNAME],
             password=self.entry.data[CONF_PASSWORD],
             component_id=self.entry.data.get(CONF_PLANT_ID),
+            check_portal_status=check_status,
         )
         self.client.login()
         _LOGGER.info("SMA ennexOS: re-authentication successful")

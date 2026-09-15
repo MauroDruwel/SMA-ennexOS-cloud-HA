@@ -152,7 +152,12 @@ async def test_flow_user_no_plants(hass: HomeAssistant) -> None:
 
 
 async def test_options_flow(hass: HomeAssistant, mock_config_entry) -> None:
-    """Test modifying poll intervals via options flow."""
+    """Test modifying poll intervals and portal status options via options flow."""
+    from custom_components.sma_ennexos_cloud.const import (
+        CONF_CHECK_PORTAL_STATUS,
+        CONF_PORTAL_STATUS_POLL_INTERVAL,
+    )
+
     mock_config_entry.add_to_hass(hass)
 
     result = await hass.config_entries.options.async_init(mock_config_entry.entry_id)
@@ -164,8 +169,12 @@ async def test_options_flow(hass: HomeAssistant, mock_config_entry) -> None:
         {
             CONF_POLL_INTERVAL: 45,
             CONF_ENERGY_POLL_INTERVAL: 600,
+            CONF_CHECK_PORTAL_STATUS: False,
+            CONF_PORTAL_STATUS_POLL_INTERVAL: 900,
         },
     )
     assert result2["type"] is FlowResultType.CREATE_ENTRY
     assert mock_config_entry.options[CONF_POLL_INTERVAL] == 45
     assert mock_config_entry.options[CONF_ENERGY_POLL_INTERVAL] == 600
+    assert mock_config_entry.options[CONF_CHECK_PORTAL_STATUS] is False
+    assert mock_config_entry.options[CONF_PORTAL_STATUS_POLL_INTERVAL] == 900

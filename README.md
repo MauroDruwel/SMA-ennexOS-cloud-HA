@@ -81,16 +81,53 @@ No browser, no scraping, no Docker add-on. Just the `sma_ennexos_cloud` Python l
 
 ---
 
-## Sensors
+## Sensors & Entities
 
-Once configured, you'll get these sensors:
+Once configured, you'll get the following sensors under your plant device:
 
-| Sensor | Unit | Description |
-|--------|------|-------------|
-| Current Power | W | Live PV production (polled every 5s) |
-| Daily Energy | Wh | Total energy produced today |
-| Plant Name | — | Your installation's name |
-| Last Sync | — | Timestamp of last data fetch |
+| Sensor | Unit | Category | Description |
+|--------|------|----------|-------------|
+| **Current Power** | W | Primary | Live PV production |
+| **Daily Energy** | Wh | Primary | Total energy produced today |
+| **Plant Name** | — | Diagnostic | Your installation's name |
+| **Last Sync** | — | Diagnostic | Timestamp of last data fetch |
+| **Live data status** | — | Diagnostic | Status of ennexOS Live Data (`operational`, `under_maintenance`, etc.) |
+
+---
+
+## Dashboard & Automation Examples
+
+### Conditional Warning Banner
+Only appears on your dashboard when Live Data is not operational (e.g. under maintenance):
+
+```yaml
+type: conditional
+conditions:
+  - entity: sensor.sma_plant_live_data_status
+    state_not: "operational"
+card:
+  type: markdown
+  content: >
+    ### ⚠️ SMA Sunny Portal Notice
+    Live Data is currently **{{ states('sensor.sma_plant_live_data_status') | replace('_', ' ') | title }}**.
+```
+
+### Automation: Notify when Live Data is Under Maintenance
+
+```yaml
+alias: "Notify: SMA Live Data Not Operational"
+trigger:
+  - platform: state
+    entity_id: sensor.sma_plant_live_data_status
+    from: "operational"
+action:
+  - action: notify.notify
+    data:
+      title: "SMA Sunny Portal Alert"
+      message: "Sunny Portal Live Data is currently {{ states('sensor.sma_plant_live_data_status') }}."
+```
+
+
 
 ---
 

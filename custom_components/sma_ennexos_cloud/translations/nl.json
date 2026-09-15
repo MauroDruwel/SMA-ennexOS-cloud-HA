@@ -33,9 +33,12 @@
         "description": "Stel in hoe vaak de integratie gegevens ophaalt van SMA ennexOS.",
         "data": {
           "poll_interval": "Interval live vermogen (seconden)",
-          "energy_poll_interval": "Interval dagelijkse energie (seconden)"
+          "energy_poll_interval": "Interval dagelijkse energie (seconden)",
+          "check_portal_status": "Portaalstatus diagnostische sensoren inschakelen",
+          "portal_status_poll_interval": "Interval portaalstatus (seconden)"
         }
       }
     }
   }
 }
+

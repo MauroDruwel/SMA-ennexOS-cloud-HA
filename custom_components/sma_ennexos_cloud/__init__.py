@@ -8,12 +8,19 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 
-from .const import CONF_PASSWORD, CONF_PLANT_ID, CONF_USERNAME
+from .const import (
+    CONF_CHECK_PORTAL_STATUS,
+    CONF_PASSWORD,
+    CONF_PLANT_ID,
+    CONF_USERNAME,
+    DEFAULT_CHECK_PORTAL_STATUS,
+)
 from .coordinator import SmaEnnexosCloudDataUpdateCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
 PLATFORMS = [Platform.SENSOR]
+
 
 type SmaEnnexosConfigEntry = ConfigEntry[SmaEnnexosCloudDataUpdateCoordinator]
 
@@ -23,10 +30,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: SmaEnnexosConfigEntry) -
     from sma_ennexos_cloud import SmaClient
 
     def _create_client():
+        check_status = entry.options.get(
+            CONF_CHECK_PORTAL_STATUS, DEFAULT_CHECK_PORTAL_STATUS
+        )
         client = SmaClient(
             username=entry.data[CONF_USERNAME],
             password=entry.data[CONF_PASSWORD],
             component_id=entry.data.get(CONF_PLANT_ID),
+            check_portal_status=check_status,
         )
         client.login()
         return client
