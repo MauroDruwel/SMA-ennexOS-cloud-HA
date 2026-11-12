@@ -209,7 +209,9 @@ class SmaEnnexosCloudDataUpdateCoordinator(DataUpdateCoordinator):
 
         now_local = datetime.now(tz)
         start_today = datetime.combine(now_local.date(), datetime.min.time(), tz)
-        end_today = datetime.combine(now_local.date() + timedelta(days=1), datetime.min.time(), tz)
+        end_today = datetime.combine(
+            now_local.date() + timedelta(days=1), datetime.min.time(), tz
+        )
 
         start_utc = start_today.astimezone(UTC)
         end_utc = end_today.astimezone(UTC)
@@ -235,8 +237,7 @@ class SmaEnnexosCloudDataUpdateCoordinator(DataUpdateCoordinator):
         for channel in data:
             if channel.get("channelId") == "Measurement.Metering.TotWhOut.Pv":
                 valid_values = [
-                    v for v in channel.get("values", [])
-                    if v.get("value") is not None
+                    v for v in channel.get("values", []) if v.get("value") is not None
                 ]
                 if valid_values:
                     latest = valid_values[-1]
