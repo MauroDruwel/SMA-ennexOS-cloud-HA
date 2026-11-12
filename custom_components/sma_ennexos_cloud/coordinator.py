@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import logging
 import time
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
+from zoneinfo import ZoneInfo
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -140,7 +141,7 @@ class SmaEnnexosCloudDataUpdateCoordinator(DataUpdateCoordinator):
         # --- Daily energy (throttled) ---
         if now - self._last_energy_poll >= energy_poll_interval:
             try:
-                energy = self.client.get_daily_energy()
+                energy = self._fetch_daily_energy()
                 self._last_daily_wh = energy.wh
                 self._last_energy_poll = now
             except Exception as err:  # noqa: BLE001
@@ -188,6 +189,63 @@ class SmaEnnexosCloudDataUpdateCoordinator(DataUpdateCoordinator):
             "weather": self._last_weather_data,
         }
 
+    def _fetch_daily_energy(self):
+        """Fetch daily energy with plant/HA timezone awareness."""
+        tz_str = self.hass.config.time_zone or "Europe/Brussels"
+        try:
+            return self.client.get_daily_energy(plant_timezone=tz_str)
+        except TypeError:
+            return self._fetch_daily_energy_direct(tz_str)
+
+    def _fetch_daily_energy_direct(self, tz_str: str):
+        """Direct fallback to query daily energy with timezone awareness."""
+        from sma_ennexos_cloud.models import EnergyData
+
+        try:
+            tz = ZoneInfo(tz_str)
+        except Exception:
+            tz = ZoneInfo("Europe/Brussels")
+            tz_str = "Europe/Brussels"
+
+        now_local = datetime.now(tz)
+        start_today = datetime.combine(now_local.date(), datetime.min.time(), tz)
+        end_today = datetime.combine(now_local.date() + timedelta(days=1), datetime.min.time(), tz)
+
+        start_utc = start_today.astimezone(UTC)
+        end_utc = end_today.astimezone(UTC)
+
+        r = self.client._post(
+            "/measurements/search",
+            {
+                "queryItems": [
+                    {
+                        "componentId": self.client.component_id,
+                        "channelId": "Measurement.Metering.TotWhOut.Pv",
+                        "resolution": "OneDay",
+                        "timezone": tz_str,
+                        "aggregate": "Dif",
+                        "multiAggregate": "Sum",
+                    }
+                ],
+                "dateTimeBegin": start_utc.strftime("%Y-%m-%dT%H:%M:%S.000Z"),
+                "dateTimeEnd": end_utc.strftime("%Y-%m-%dT%H:%M:%S.000Z"),
+            },
+        )
+        data = r.json()
+        for channel in data:
+            if channel.get("channelId") == "Measurement.Metering.TotWhOut.Pv":
+                valid_values = [
+                    v for v in channel.get("values", [])
+                    if v.get("value") is not None
+                ]
+                if valid_values:
+                    latest = valid_values[-1]
+                    return EnergyData(
+                        wh=latest["value"],
+                        timestamp=latest.get("time", ""),
+                    )
+        return EnergyData(wh=0)
+
     def _relogin(self) -> None:
         """Force a fresh login, replacing the client's session."""
         from sma_ennexos_cloud import SmaClient
@@ -200,11 +258,20 @@ class SmaEnnexosCloudDataUpdateCoordinator(DataUpdateCoordinator):
         check_status = self.entry.options.get(
             CONF_CHECK_PORTAL_STATUS, DEFAULT_CHECK_PORTAL_STATUS
         )
-        self.client = SmaClient(
-            username=self.entry.data[CONF_USERNAME],
-            password=self.entry.data[CONF_PASSWORD],
-            component_id=self.entry.data.get(CONF_PLANT_ID),
-            check_portal_status=check_status,
-        )
+        try:
+            self.client = SmaClient(
+                username=self.entry.data[CONF_USERNAME],
+                password=self.entry.data[CONF_PASSWORD],
+                component_id=self.entry.data.get(CONF_PLANT_ID),
+                check_portal_status=check_status,
+                timezone=self.hass.config.time_zone,
+            )
+        except TypeError:
+            self.client = SmaClient(
+                username=self.entry.data[CONF_USERNAME],
+                password=self.entry.data[CONF_PASSWORD],
+                component_id=self.entry.data.get(CONF_PLANT_ID),
+                check_portal_status=check_status,
+            )
         self.client.login()
         _LOGGER.info("SMA ennexOS: re-authentication successful")

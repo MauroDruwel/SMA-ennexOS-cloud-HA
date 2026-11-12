@@ -12,6 +12,7 @@ import re
 import sys
 import urllib.parse
 from datetime import UTC, datetime, timedelta
+from zoneinfo import ZoneInfo
 
 import requests
 
@@ -272,11 +273,23 @@ class SmaSession:
         r = self._api_get(f"/components/{self.component_id}/livestatus")
         return r.json()
 
-    def get_daily_energy(self) -> dict:
+    def get_daily_energy(self, tz_name: str = "Europe/Brussels") -> dict:
         if not self.component_id:
             self.discover_plant()
-        now = datetime.now(UTC)
-        prev = now - timedelta(days=1)
+
+        try:
+            tz = ZoneInfo(tz_name)
+        except Exception:
+            tz = ZoneInfo("Europe/Brussels")
+            tz_name = "Europe/Brussels"
+
+        now_local = datetime.now(tz)
+        start_today = datetime.combine(now_local.date(), datetime.min.time(), tz)
+        end_today = datetime.combine(now_local.date() + timedelta(days=1), datetime.min.time(), tz)
+
+        start_utc = start_today.astimezone(UTC)
+        end_utc = end_today.astimezone(UTC)
+
         r = self._api_post(
             "/measurements/search",
             {
@@ -285,26 +298,30 @@ class SmaSession:
                         "componentId": self.component_id,
                         "channelId": "Measurement.Metering.TotWhOut.Pv",
                         "resolution": "OneDay",
-                        "timezone": "Europe/Brussels",
+                        "timezone": tz_name,
                         "aggregate": "Dif",
                         "multiAggregate": "Sum",
                     }
                 ],
-                "dateTimeBegin": prev.strftime("%Y-%m-%dT22:00:00.000Z"),
-                "dateTimeEnd": now.strftime("%Y-%m-%dT22:00:00.000Z"),
+                "dateTimeBegin": start_utc.strftime("%Y-%m-%dT%H:%M:%S.000Z"),
+                "dateTimeEnd": end_utc.strftime("%Y-%m-%dT%H:%M:%S.000Z"),
             },
         )
         data = r.json()
         for channel in data:
             if channel["channelId"] == "Measurement.Metering.TotWhOut.Pv":
-                for v in channel.get("values", []):
-                    if v.get("value") is not None:
-                        return {
-                            "wh": v["value"],
-                            "timestamp": v["time"],
-                            "min": channel.get("min"),
-                            "max": channel.get("max"),
-                        }
+                valid_values = [
+                    v for v in channel.get("values", [])
+                    if v.get("value") is not None
+                ]
+                if valid_values:
+                    latest = valid_values[-1]
+                    return {
+                        "wh": latest["value"],
+                        "timestamp": latest.get("time", ""),
+                        "min": channel.get("min"),
+                        "max": channel.get("max"),
+                    }
         return {"wh": 0}
 
 

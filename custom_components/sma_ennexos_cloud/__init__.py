@@ -33,12 +33,21 @@ async def async_setup_entry(hass: HomeAssistant, entry: SmaEnnexosConfigEntry) -
         check_status = entry.options.get(
             CONF_CHECK_PORTAL_STATUS, DEFAULT_CHECK_PORTAL_STATUS
         )
-        client = SmaClient(
-            username=entry.data[CONF_USERNAME],
-            password=entry.data[CONF_PASSWORD],
-            component_id=entry.data.get(CONF_PLANT_ID),
-            check_portal_status=check_status,
-        )
+        try:
+            client = SmaClient(
+                username=entry.data[CONF_USERNAME],
+                password=entry.data[CONF_PASSWORD],
+                component_id=entry.data.get(CONF_PLANT_ID),
+                check_portal_status=check_status,
+                timezone=hass.config.time_zone,
+            )
+        except TypeError:
+            client = SmaClient(
+                username=entry.data[CONF_USERNAME],
+                password=entry.data[CONF_PASSWORD],
+                component_id=entry.data.get(CONF_PLANT_ID),
+                check_portal_status=check_status,
+            )
         client.login()
         return client
 
